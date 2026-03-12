@@ -1,0 +1,809 @@
+{
+    "Engineering": {
+        "degrees": [
+            "B.Tech",
+            "B.E.",
+            "M.Tech",
+            "M.E.",
+            "Diploma"
+        ],
+        "departments": {
+            "Computer Science": {
+                "topics": [
+                    {
+                        "title": "Data Structures & Algorithms",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Problem Solving",
+                            "Logic"
+                        ],
+                        "description": "Fundamental data structures and algorithmic efficiency."
+                    },
+                    {
+                        "title": "Operating Systems",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "OS Concepts",
+                            "Concurrency"
+                        ],
+                        "description": "Process management, memory management, and file systems."
+                    },
+                    {
+                        "title": "Database Management Systems",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "SQL",
+                            "Data Modeling"
+                        ],
+                        "description": "Relational database design and query optimization."
+                    },
+                    {
+                        "title": "Computer Networks",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Networking",
+                            "Protocols"
+                        ],
+                        "description": "OSI model, TCP/IP, and network security."
+                    },
+                    {
+                        "title": "Artificial Intelligence",
+                        "difficulty": "advanced",
+                        "estimated_hours": 12,
+                        "type": "elective",
+                        "skills_gained": [
+                            "AI",
+                            "Machine Learning"
+                        ],
+                        "description": "Introduction to AI agents, search algorithms, and ML basics."
+                    },
+                    {
+                        "title": "Cloud Computing",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "elective",
+                        "skills_gained": [
+                            "AWS",
+                            "Virtualization"
+                        ],
+                        "description": "Cloud architecture, services, and deployment models."
+                    }
+                ]
+            },
+            "Electronics": {
+                "topics": [
+                    {
+                        "title": "Digital Logic Design",
+                        "difficulty": "beginner",
+                        "estimated_hours": 6,
+                        "type": "core",
+                        "skills_gained": [
+                            "Logic Gates",
+                            "Circuits"
+                        ],
+                        "description": "Boolean algebra, combinational and sequential circuits."
+                    },
+                    {
+                        "title": "Microprocessors",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Assembly",
+                            "Architecture"
+                        ],
+                        "description": "8085/8086 architecture and programming."
+                    },
+                    {
+                        "title": "Embedded Systems",
+                        "difficulty": "advanced",
+                        "estimated_hours": 12,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Microcontrollers",
+                            "IoT"
+                        ],
+                        "description": "Design and programming of embedded systems."
+                    },
+                    {
+                        "title": "VLSI Design",
+                        "difficulty": "advanced",
+                        "estimated_hours": 15,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Verilog",
+                            "Chip Design"
+                        ],
+                        "description": "MOSFETs, CMOS logic, and layout design."
+                    }
+                ]
+            },
+            "Mechanical": {
+                "topics": [
+                    {
+                        "title": "Thermodynamics",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Heat Transfer",
+                            "Energy"
+                        ],
+                        "description": "Laws of thermodynamics, entropy, and heat engines."
+                    },
+                    {
+                        "title": "Fluid Mechanics",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Fluids",
+                            "Dynamics"
+                        ],
+                        "description": "Fluid statics, kinematics, and dynamics."
+                    },
+                    {
+                        "title": "CAD/CAM",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 10,
+                        "type": "skill",
+                        "skills_gained": [
+                            "Design",
+                            "Manufacturing"
+                        ],
+                        "description": "Computer-aided design and manufacturing processes."
+                    },
+                    {
+                        "title": "Robotics",
+                        "difficulty": "advanced",
+                        "estimated_hours": 12,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Automation",
+                            "Kinematics"
+                        ],
+                        "description": "Robot kinematics, dynamics, and control systems."
+                    }
+                ]
+            },
+            "Civil": {
+                "topics": [
+                    {
+                        "title": "Structural Analysis",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Structures",
+                            "Mechanics"
+                        ],
+                        "description": "Analysis of statically determinate and indeterminate structures."
+                    },
+                    {
+                        "title": "Geotechnical Engineering",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Soil Mechanics",
+                            "Foundations"
+                        ],
+                        "description": "Soil properties, soil classification, and foundation engineering."
+                    },
+                    {
+                        "title": "Construction Management",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 6,
+                        "type": "skill",
+                        "skills_gained": [
+                            "Management",
+                            "Planning"
+                        ],
+                        "description": "Project planning, scheduling, and cost estimation."
+                    },
+                    {
+                        "title": "Environmental Engineering",
+                        "difficulty": "advanced",
+                        "estimated_hours": 8,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Environment",
+                            "Water Treatment"
+                        ],
+                        "description": "Water supply, wastewater treatment, and pollution control."
+                    }
+                ]
+            }
+        }
+    },
+    "Science": {
+        "degrees": [
+            "B.Sc",
+            "M.Sc",
+            "Ph.D"
+        ],
+        "departments": {
+            "Physics": {
+                "topics": [
+                    {
+                        "title": "Classical Mechanics",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Mechanics",
+                            "Motion"
+                        ],
+                        "description": "Newtonian mechanics, Lagrangian and Hamiltonian dynamics."
+                    },
+                    {
+                        "title": "Quantum Mechanics",
+                        "difficulty": "advanced",
+                        "estimated_hours": 12,
+                        "type": "core",
+                        "skills_gained": [
+                            "Quantum Physics",
+                            "Math"
+                        ],
+                        "description": "Wave functions, Schrödinger equation, and quantum states."
+                    },
+                    {
+                        "title": "Statistical Physics",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Statistics",
+                            "Thermodynamics"
+                        ],
+                        "description": "Ensembles, partition functions, and phase transitions."
+                    },
+                    {
+                        "title": "Electronics for Physicists",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 6,
+                        "type": "skill",
+                        "skills_gained": [
+                            "Circuits",
+                            "Instrumentation"
+                        ],
+                        "description": "Analog and digital electronics for experimental physics."
+                    }
+                ]
+            },
+            "Mathematics": {
+                "topics": [
+                    {
+                        "title": "Real Analysis",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Analysis",
+                            "Calculus"
+                        ],
+                        "description": "Sequences, series, continuity, and differentiation."
+                    },
+                    {
+                        "title": "Abstract Algebra",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Algebra",
+                            "Group Theory"
+                        ],
+                        "description": "Groups, rings, fields, and vector spaces."
+                    },
+                    {
+                        "title": "Differential Equations",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Calculus",
+                            "Modeling"
+                        ],
+                        "description": "ODEs, PDEs, and their applications."
+                    },
+                    {
+                        "title": "Number Theory",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Math",
+                            "Cryptography"
+                        ],
+                        "description": "Prime numbers, congruences, and cryptographic applications."
+                    }
+                ]
+            },
+            "Chemistry": {
+                "topics": [
+                    {
+                        "title": "Organic Chemistry",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Reactions",
+                            "Synthesis"
+                        ],
+                        "description": "Structure, properties, and reactions of organic compounds."
+                    },
+                    {
+                        "title": "Physical Chemistry",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Thermodynamics",
+                            "Kinetics"
+                        ],
+                        "description": "Thermodynamics, chemical kinetics, and quantum chemistry."
+                    },
+                    {
+                        "title": "Inorganic Chemistry",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Elements",
+                            "Coordination Chemistry"
+                        ],
+                        "description": "Properties and periodicity of inorganic elements."
+                    },
+                    {
+                        "title": "Analytical Techniques",
+                        "difficulty": "advanced",
+                        "estimated_hours": 6,
+                        "type": "skill",
+                        "skills_gained": [
+                            "Spectroscopy",
+                            "Analysis"
+                        ],
+                        "description": "Spectroscopy, chromatography, and electrochemical methods."
+                    }
+                ]
+            },
+            "Biology": {
+                "topics": [
+                    {
+                        "title": "Cell Biology",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Cells",
+                            "Genetics"
+                        ],
+                        "description": "Structure and function of cells and organelles."
+                    },
+                    {
+                        "title": "Genetics",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "DNA",
+                            "Heredity"
+                        ],
+                        "description": "Mendelian genetics, DNA structure, and gene expression."
+                    },
+                    {
+                        "title": "Microbiology",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Microbes",
+                            "Health"
+                        ],
+                        "description": "Study of microorganisms and their effects on humans."
+                    },
+                    {
+                        "title": "Biochemistry",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Chemistry",
+                            "Metabolism"
+                        ],
+                        "description": "Chemical processes within and relating to living organisms."
+                    }
+                ]
+            }
+        }
+    },
+    "Medical": {
+        "degrees": [
+            "MBBS",
+            "BDS",
+            "B.Pharma",
+            "Nursing"
+        ],
+        "departments": {
+            "Human Anatomy": {
+                "topics": [
+                    {
+                        "title": "Gross Anatomy",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 12,
+                        "type": "core",
+                        "skills_gained": [
+                            "Anatomy",
+                            "Dissection"
+                        ],
+                        "description": "Study of macroscopic structure of the human body."
+                    },
+                    {
+                        "title": "Histology",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Tissues",
+                            "Microscopy"
+                        ],
+                        "description": "Microscopic study of tissues and organs."
+                    },
+                    {
+                        "title": "Embryology",
+                        "difficulty": "advanced",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Development",
+                            "Embryo"
+                        ],
+                        "description": "Development of the human embryo and fetus."
+                    }
+                ]
+            },
+            "Pharmacology": {
+                "topics": [
+                    {
+                        "title": "General Pharmacology",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Drugs",
+                            "Kinetics"
+                        ],
+                        "description": "Pharmacokinetics and pharmacodynamics."
+                    },
+                    {
+                        "title": "Clinical Pharmacology",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "skill",
+                        "skills_gained": [
+                            "Prescribing",
+                            "Therapeutics"
+                        ],
+                        "description": "Application of pharmacological principles in patient care."
+                    },
+                    {
+                        "title": "Toxicology",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 6,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Toxins",
+                            "Safety"
+                        ],
+                        "description": "Study of adverse effects of chemicals on living organisms."
+                    }
+                ]
+            }
+        }
+    },
+    "Arts & Humanities": {
+        "degrees": [
+            "B.A.",
+            "M.A."
+        ],
+        "departments": {
+            "Economics": {
+                "topics": [
+                    {
+                        "title": "Microeconomics",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Economics",
+                            "Analysis"
+                        ],
+                        "description": "Consumer behavior, production theory, and market structures."
+                    },
+                    {
+                        "title": "Macroeconomics",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Economics",
+                            "Policy"
+                        ],
+                        "description": "National income, inflation, unemployment, and fiscal policy."
+                    }
+                ]
+            },
+            "English Literature": {
+                "topics": [
+                    {
+                        "title": "Literary Criticism",
+                        "difficulty": "advanced",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Analysis",
+                            "Critical Thinking"
+                        ],
+                        "description": "Major theories and approaches to literary analysis."
+                    },
+                    {
+                        "title": "Modernist Fiction",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 6,
+                        "type": "core",
+                        "skills_gained": [
+                            "Literature",
+                            "History"
+                        ],
+                        "description": "Study of early 20th-century novels and short stories."
+                    }
+                ]
+            },
+            "Psychology": {
+                "topics": [
+                    {
+                        "title": "Cognitive Psychology",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Cognition",
+                            "Memory"
+                        ],
+                        "description": "Mental processes such as attention, language, and memory."
+                    },
+                    {
+                        "title": "Abnormal Psychology",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Disorders",
+                            "Diagnosis"
+                        ],
+                        "description": "Study of unusual patterns of behavior and mental disorders."
+                    },
+                    {
+                        "title": "Social Psychology",
+                        "difficulty": "beginner",
+                        "estimated_hours": 6,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Behavior",
+                            "Society"
+                        ],
+                        "description": "How people's thoughts and feelings are influenced by others."
+                    }
+                ]
+            },
+            "Political Science": {
+                "topics": [
+                    {
+                        "title": "Political Theory",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Politics",
+                            "Philosophy"
+                        ],
+                        "description": "Ideas and concepts in political thought."
+                    },
+                    {
+                        "title": "International Relations",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Diplomacy",
+                            "Global Affairs"
+                        ],
+                        "description": "Relations between nations and global organizations."
+                    },
+                    {
+                        "title": "Comparative Politics",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Analysis",
+                            "Systems"
+                        ],
+                        "description": "Comparing different political systems including US and UK."
+                    }
+                ]
+            }
+        }
+    },
+    "Commerce": {
+        "degrees": [
+            "B.Com",
+            "M.Com",
+            "BBA",
+            "MBA"
+        ],
+        "departments": {
+            "Business Administration": {
+                "topics": [
+                    {
+                        "title": "Financial Accounting",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Accounting",
+                            "Finance"
+                        ],
+                        "description": "Preparation and analysis of financial statements."
+                    },
+                    {
+                        "title": "Marketing Management",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 6,
+                        "type": "core",
+                        "skills_gained": [
+                            "Marketing",
+                            "Strategy"
+                        ],
+                        "description": "Market research, consumer behavior, and marketing mix."
+                    },
+                    {
+                        "title": "Organizational Behavior",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 6,
+                        "type": "core",
+                        "skills_gained": [
+                            "Management",
+                            "Psychology"
+                        ],
+                        "description": "Individual and group behavior in organizations."
+                    },
+                    {
+                        "title": "Strategic Management",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Strategy",
+                            "Leadership"
+                        ],
+                        "description": "Form formulation, implementation, and evaluation."
+                    }
+                ]
+            },
+            "Finance": {
+                "topics": [
+                    {
+                        "title": "Corporate Finance",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Finance",
+                            "Valuation"
+                        ],
+                        "description": "Investment decisions, capital structure, and dividend policy."
+                    },
+                    {
+                        "title": "Investment Analysis",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Investing",
+                            "Analysis"
+                        ],
+                        "description": "Security analysis, portfolio management, and derivatives."
+                    },
+                    {
+                        "title": "Taxation",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 8,
+                        "type": "skill",
+                        "skills_gained": [
+                            "Tax",
+                            "Law"
+                        ],
+                        "description": "Income tax laws and corporate tax planning."
+                    },
+                    {
+                        "title": "Banking and Financial Services",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 6,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Banking",
+                            "Finance"
+                        ],
+                        "description": "Operations of banks and financial institutions."
+                    }
+                ]
+            }
+        }
+    },
+    "Law": {
+        "degrees": [
+            "LLB",
+            "LLM",
+            "B.A. LLB"
+        ],
+        "departments": {
+            "Law": {
+                "topics": [
+                    {
+                        "title": "Constitutional Law",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Constitution",
+                            "Rights"
+                        ],
+                        "description": "Study of the constitution, fundamental rights, and duties."
+                    },
+                    {
+                        "title": "Criminal Law",
+                        "difficulty": "intermediate",
+                        "estimated_hours": 10,
+                        "type": "core",
+                        "skills_gained": [
+                            "Crimes",
+                            "Penal Code"
+                        ],
+                        "description": "Principles of criminal liability and penal code."
+                    },
+                    {
+                        "title": "Contract Law",
+                        "difficulty": "beginner",
+                        "estimated_hours": 8,
+                        "type": "core",
+                        "skills_gained": [
+                            "Contracts",
+                            "Agreements"
+                        ],
+                        "description": "Formation and validity of contracts."
+                    },
+                    {
+                        "title": "Corporate Law",
+                        "difficulty": "advanced",
+                        "estimated_hours": 10,
+                        "type": "elective",
+                        "skills_gained": [
+                            "Corporate",
+                            "Business"
+                        ],
+                        "description": "Laws governing companies and business entities."
+                    }
+                ]
+            }
+        }
+    }
+}

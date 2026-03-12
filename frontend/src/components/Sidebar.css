@@ -1,0 +1,216 @@
+/* SmartCurriculum - Sidebar Styles */
+
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--neutral-100);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+    transition: transform var(--transition-normal);
+}
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+}
+
+.sidebar-header {
+    padding: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--neutral-100);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.logo-icon {
+    color: var(--primary-600);
+}
+
+.logo-text {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.logo-highlight {
+    background: var(--bg-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.sidebar-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    border-radius: var(--radius-md);
+}
+
+.sidebar-close:hover {
+    background: var(--neutral-100);
+    color: var(--text-primary);
+}
+
+.sidebar-nav {
+    flex: 1;
+    padding: var(--spacing-lg) var(--spacing-md);
+    overflow-y: auto;
+}
+
+.nav-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: 12px var(--spacing-md);
+    color: var(--text-secondary);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-fast);
+    text-decoration: none;
+}
+
+.nav-link:hover {
+    background: var(--neutral-50);
+    color: var(--text-primary);
+}
+
+.nav-link.active {
+    background: var(--primary-50);
+    color: var(--primary-600);
+}
+
+.nav-link.active .nav-icon {
+    color: var(--primary-600);
+}
+
+.nav-icon {
+    flex-shrink: 0;
+}
+
+.nav-label {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+}
+
+.sidebar-footer {
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--neutral-100);
+}
+
+.sidebar-progress-card {
+    background: var(--bg-gradient-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-sm);
+}
+
+.progress-label {
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.sidebar-footer-actions {
+    padding: 0 1.5rem 1rem;
+}
+
+.sidebar-logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: none;
+    background: rgba(220, 38, 38, 0.1);
+    color: #ef4444;
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebar-logout-btn:hover {
+    background: #ef4444;
+    color: white;
+}
+
+.progress-value {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--primary-600);
+}
+
+.progress-hint {
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+    margin-top: var(--spacing-sm);
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+}
+
+/* Collapsed state for desktop */
+.sidebar.closed {
+    width: 72px;
+}
+
+.sidebar.closed .logo-text,
+.sidebar.closed .nav-label,
+.sidebar.closed .sidebar-progress-card {
+    display: none;
+}
+
+.sidebar.closed .sidebar-header {
+    justify-content: center;
+    padding: var(--spacing-md);
+}
+
+.sidebar.closed .nav-link {
+    justify-content: center;
+    padding: 12px;
+}
+
+.sidebar.closed+.main-content {
+    margin-left: 72px;
+}
+
+.sidebar.closed+.main-content .navbar {
+    left: 72px;
+}

@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment
+.env
+*.env
+
+# Database
+backend/instance/
+*.db
+*.sqlite
+
+# IDE
+.vscode/
+.idea/
+
+# Build
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
