@@ -1,15 +1,18 @@
-# SmartCurriculum - Authentication Routes
+# SmartCurriculum - Authentication Routes (MongoDB)
 # Handles user registration, login, and profile management
 
+import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
-    create_access_token, 
+    create_access_token,
     create_refresh_token,
-    jwt_required, 
+    jwt_required,
     get_jwt_identity
 )
-from database import db
+from database import get_db
 from models.user import User
+
+logger = logging.getLogger(__name__)
 
 # Create blueprint for auth routes
 auth_bp = Blueprint('auth', __name__)
@@ -19,7 +22,7 @@ auth_bp = Blueprint('auth', __name__)
 def register():
     """
     Register a new user.
-    
+
     Expected JSON body:
     {
         "email": "user@example.com",
@@ -32,7 +35,10 @@ def register():
     }
     """
     data = request.get_json()
-    
+
+    if not data:
+        return jsonify({'error': 'Validation Error', 'message': 'Request body is required'}), 400
+
     # Validate required fields
     required_fields = ['email', 'password', 'name']
     for field in required_fields:
@@ -41,63 +47,64 @@ def register():
                 'error': 'Validation Error',
                 'message': f'{field} is required'
             }), 400
-    
-    # Check if email already exists
-    existing_user = User.query.filter_by(email=data['email'].lower()).first()
-    if existing_user:
-        return jsonify({
-            'error': 'Registration Failed',
-            'message': 'Email already registered'
-        }), 409
-    
+
+    # Validate email format (basic)
+    email = data['email'].strip().lower()
+    if '@' not in email or '.' not in email:
+        return jsonify({'error': 'Validation Error', 'message': 'Invalid email format'}), 400
+
     # Validate password length
     if len(data['password']) < 6:
         return jsonify({
             'error': 'Validation Error',
             'message': 'Password must be at least 6 characters'
         }), 400
-    
+
+    db = get_db()
+
+    # Check if email already exists
+    existing_user = User.find_by_email(db, email)
+    if existing_user:
+        return jsonify({
+            'error': 'Registration Failed',
+            'message': 'Email already registered'
+        }), 409
+
     try:
         # Create new user
-        user = User(
-            email=data['email'],
+        user = User.create(
+            db=db,
+            email=email,
             password=data['password'],
             name=data['name'],
             semester=data.get('semester', 1),
             skill_level=data.get('skill_level', 'beginner'),
             career_goal=data.get('career_goal', 'placement'),
             learning_pace=data.get('learning_pace', 'moderate'),
-            branch=data.get('branch', 'Computer Science')
+            branch=data.get('branch', 'Computer Science'),
+            weak_subjects=data.get('weak_subjects', []),
+            strong_subjects=data.get('strong_subjects', []),
+            interests=data.get('interests', [])
         )
-        
-        # Set optional list fields
-        if data.get('weak_subjects'):
-            user.set_weak_subjects(data['weak_subjects'])
-        if data.get('strong_subjects'):
-            user.set_strong_subjects(data['strong_subjects'])
-        if data.get('interests'):
-            user.set_interests(data['interests'])
-        
-        # Save to database
-        db.session.add(user)
-        db.session.commit()
-        
+
         # Generate tokens
-        access_token = create_access_token(identity=str(user.id))
-        refresh_token = create_refresh_token(identity=str(user.id))
-        
+        access_token = create_access_token(identity=user.id)
+        refresh_token = create_refresh_token(identity=user.id)
+
+        logger.info(f"New user registered: {email}")
+
         return jsonify({
             'message': 'Registration successful',
             'user': user.to_dict(include_sensitive=True),
             'access_token': access_token,
             'refresh_token': refresh_token
         }), 201
-        
+
     except Exception as e:
-        db.session.rollback()
+        logger.error(f"Registration error for {email}: {e}")
         return jsonify({
             'error': 'Registration Failed',
-            'message': str(e)
+            'message': 'An error occurred during registration. Please try again.'
         }), 500
 
 
@@ -105,73 +112,43 @@ def register():
 def login():
     """
     Login an existing user.
-    
+
     Expected JSON body:
     {
         "email": "user@example.com",
         "password": "password123"
     }
     """
-    with open('debug_log.txt', 'a') as f:
-        f.write("\n>>> DEBUG: Login request received\n")
-        data = request.get_json()
-        f.write(f">>> DEBUG: Login attempt for email: {data.get('email')}\n")
-        
-        # Validate required fields
-        if not data.get('email') or not data.get('password'):
-            f.write(">>> DEBUG: Missing email or password\n")
-            return jsonify({
-                'error': 'Validation Error',
-                'message': 'Email and password are required'
-            }), 400
-        
-        # Find user by email
-        f.write(">>> DEBUG: Querying database for user...\n")
-        user = User.query.filter_by(email=data['email'].lower()).first()
-        f.write(f">>> DEBUG: User found: {user is not None}\n")
-        
-        # Verify user exists and password is correct
-        if not user:
-            f.write(">>> DEBUG: Login failed - User not found\n")
-            return jsonify({
-                'error': 'Login Failed',
-                'message': 'Invalid email or password'
-            }), 401
-            
-        f.write(">>> DEBUG: Verifying password...\n")
-        f.flush() # Ensure logs are written before bcrypt call
-        
-        try:
-            password_correct = user.check_password(data['password'])
-            f.write(f">>> DEBUG: Password correct: {password_correct}\n")
-        except Exception as e:
-            f.write(f">>> DEBUG: FATAL ERROR during check_password: {str(e)}\n")
-            f.flush()
-            raise e
-        
-        if not password_correct:
-            f.write(">>> DEBUG: Login failed - Incorrect password\n")
-            return jsonify({
-                'error': 'Login Failed',
-                'message': 'Invalid email or password'
-            }), 401
-        
-        # Generate tokens
-        f.write(">>> DEBUG: Generating JWT tokens...\n")
-        access_token = create_access_token(identity=str(user.id))
-        refresh_token = create_refresh_token(identity=str(user.id))
-        f.write(">>> DEBUG: Tokens generated successfully\n")
-        
-        f.write(">>> DEBUG: Login successful, returning response\n\n")
-        f.flush()
-    
-    return jsonify({
-        'message': 'Login successful',
-        'user': user.to_dict(include_sensitive=True),
-        'access_token': access_token,
-        'refresh_token': refresh_token
-    }), 200
-    
+    data = request.get_json()
+
+    if not data:
+        return jsonify({'error': 'Validation Error', 'message': 'Request body is required'}), 400
+
+    # Validate required fields
+    if not data.get('email') or not data.get('password'):
+        return jsonify({
+            'error': 'Validation Error',
+            'message': 'Email and password are required'
+        }), 400
+
+    db = get_db()
+
+    # Find user by email
+    user = User.find_by_email(db, data['email'])
+
+    # Verify user exists and password is correct
+    if not user or not user.check_password(data['password']):
+        return jsonify({
+            'error': 'Login Failed',
+            'message': 'Invalid email or password'
+        }), 401
+
+    # Generate tokens
+    access_token = create_access_token(identity=user.id)
+    refresh_token = create_refresh_token(identity=user.id)
+
+    logger.info(f"User logged in: {user.email}")
+
     return jsonify({
         'message': 'Login successful',
         'user': user.to_dict(include_sensitive=True),
@@ -187,23 +164,16 @@ def get_profile():
     Get the current user's profile.
     Requires JWT authentication.
     """
-    with open('debug_log.txt', 'a') as f:
-        f.write("\n>>> DEBUG: get_profile request received\n")
-        user_id = get_jwt_identity()
-        f.write(f">>> DEBUG: User ID from token: {user_id}\n")
-        user = User.query.get(user_id)
-        f.write(f">>> DEBUG: User found: {user is not None}\n")
-        
-        if not user:
-            f.write(">>> DEBUG: User not found in database\n")
-            return jsonify({
-                'error': 'Not Found',
-                'message': 'User not found'
-            }), 404
-        
-        f.write(">>> DEBUG: Returning profile data\n\n")
-        f.flush()
-    
+    user_id = get_jwt_identity()
+    db = get_db()
+    user = User.find_by_id(db, user_id)
+
+    if not user:
+        return jsonify({
+            'error': 'Not Found',
+            'message': 'User not found'
+        }), 404
+
     return jsonify({
         'user': user.to_dict(include_sensitive=True)
     }), 200
@@ -214,7 +184,7 @@ def get_profile():
 def update_profile():
     """
     Update the current user's profile.
-    
+
     Expected JSON body (all fields optional):
     {
         "name": "New Name",
@@ -229,41 +199,53 @@ def update_profile():
     }
     """
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    
+    db = get_db()
+    user = User.find_by_id(db, user_id)
+
     if not user:
         return jsonify({
             'error': 'Not Found',
             'message': 'User not found'
         }), 404
-    
+
     data = request.get_json()
-    
-    # Update simple fields
-    simple_fields = ['name', 'semester', 'skill_level', 'career_goal', 'learning_pace', 'branch']
-    for field in simple_fields:
+    if not data:
+        return jsonify({'error': 'Validation Error', 'message': 'Request body is required'}), 400
+
+    # Build update document with allowed fields only
+    allowed_simple = ['name', 'semester', 'skill_level', 'career_goal', 'learning_pace', 'branch']
+    allowed_list = ['weak_subjects', 'strong_subjects', 'interests']
+    updates = {}
+
+    for field in allowed_simple:
         if field in data:
-            setattr(user, field, data[field])
-    
-    # Update list fields
-    if 'weak_subjects' in data:
-        user.set_weak_subjects(data['weak_subjects'])
-    if 'strong_subjects' in data:
-        user.set_strong_subjects(data['strong_subjects'])
-    if 'interests' in data:
-        user.set_interests(data['interests'])
-    
+            updates[field] = data[field]
+
+    for field in allowed_list:
+        if field in data:
+            if not isinstance(data[field], list):
+                return jsonify({
+                    'error': 'Validation Error',
+                    'message': f'{field} must be a list'
+                }), 400
+            updates[field] = data[field]
+
+    if not updates:
+        return jsonify({'error': 'Validation Error', 'message': 'No valid fields to update'}), 400
+
     try:
-        db.session.commit()
+        user.update(updates)
+        # Re-fetch updated user
+        user = User.find_by_id(db, user_id)
         return jsonify({
             'message': 'Profile updated successfully',
             'user': user.to_dict(include_sensitive=True)
         }), 200
     except Exception as e:
-        db.session.rollback()
+        logger.error(f"Profile update error for user {user_id}: {e}")
         return jsonify({
             'error': 'Update Failed',
-            'message': str(e)
+            'message': 'An error occurred while updating your profile.'
         }), 500
 
 
@@ -272,7 +254,7 @@ def update_profile():
 def change_password():
     """
     Change the current user's password.
-    
+
     Expected JSON body:
     {
         "current_password": "oldpassword",
@@ -280,23 +262,26 @@ def change_password():
     }
     """
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    
+    db = get_db()
+    user = User.find_by_id(db, user_id)
+
     if not user:
         return jsonify({
             'error': 'Not Found',
             'message': 'User not found'
         }), 404
-    
+
     data = request.get_json()
-    
+    if not data:
+        return jsonify({'error': 'Validation Error', 'message': 'Request body is required'}), 400
+
     # Validate current password
     if not user.check_password(data.get('current_password', '')):
         return jsonify({
             'error': 'Validation Error',
             'message': 'Current password is incorrect'
         }), 400
-    
+
     # Validate new password
     new_password = data.get('new_password', '')
     if len(new_password) < 6:
@@ -304,30 +289,22 @@ def change_password():
             'error': 'Validation Error',
             'message': 'New password must be at least 6 characters'
         }), 400
-    
+
     try:
         user.set_password(new_password)
-        db.session.commit()
-        return jsonify({
-            'message': 'Password changed successfully'
-        }), 200
+        return jsonify({'message': 'Password changed successfully'}), 200
     except Exception as e:
-        db.session.rollback()
+        logger.error(f"Password change error for user {user_id}: {e}")
         return jsonify({
             'error': 'Update Failed',
-            'message': str(e)
+            'message': 'An error occurred while changing your password.'
         }), 500
 
 
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh_token():
-    """
-    Refresh the access token using a refresh token.
-    """
+    """Refresh the access token using a refresh token."""
     user_id = get_jwt_identity()
-    access_token = create_access_token(identity=str(user_id))
-    
-    return jsonify({
-        'access_token': access_token
-    }), 200
+    access_token = create_access_token(identity=user_id)
+    return jsonify({'access_token': access_token}), 200

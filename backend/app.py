@@ -1,13 +1,20 @@
 # SmartCurriculum - Main Application Entry Point
-# Flask application with CORS, JWT authentication, and route registration
+# Flask application with CORS, JWT authentication, and MongoDB database
 
 import os
-
+import logging
 from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from config import get_config
-from database import init_db, db
+from database import init_db
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+)
+logger = logging.getLogger('smartcurriculum')
 
 # Create Flask application
 app = Flask(__name__)
@@ -27,8 +34,6 @@ jwt = JWTManager(app)
 # Initialize database (allow tests to skip auto-init)
 if os.environ.get("SKIP_DB_INIT") != "1":
     init_db(app)
-
-
 
 
 # ============================================================
@@ -59,13 +64,15 @@ def index():
     return jsonify({
         'name': 'SmartCurriculum API',
         'version': '1.0.0',
+        'database': 'MongoDB Atlas',
         'description': 'AI-Powered Personalized Educational Curriculum Design System',
         'endpoints': {
             'auth': '/api/auth',
             'curriculum': '/api/curriculum',
             'ai': '/api/ai',
             'resume': '/api/resume',
-            'admin': '/api/admin'
+            'admin': '/api/admin',
+            'health': '/api/health'
         }
     })
 
@@ -76,6 +83,7 @@ def health_check():
     return jsonify({
         'status': 'healthy',
         'database': 'connected',
+        'database_type': 'MongoDB Atlas',
         'version': '1.0.0'
     })
 
@@ -123,7 +131,7 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     """Handle 500 Internal Server errors."""
-    db.session.rollback()  # Rollback any failed transactions
+    logger.error(f"Internal server error: {error}")
     return jsonify({
         'error': 'Internal Server Error',
         'message': 'An unexpected error occurred'
@@ -137,7 +145,7 @@ def internal_error(error):
 @jwt.expired_token_loader
 def expired_token_callback(jwt_header, jwt_payload):
     """Handle expired JWT tokens."""
-    print(f"JWT TOKEN EXPIRED: {jwt_payload}")
+    logger.warning(f"JWT TOKEN EXPIRED: {jwt_payload.get('sub')}")
     return jsonify({
         'error': 'Token Expired',
         'message': 'Your session has expired. Please login again.'
@@ -147,7 +155,7 @@ def expired_token_callback(jwt_header, jwt_payload):
 @jwt.invalid_token_loader
 def invalid_token_callback(error):
     """Handle invalid JWT tokens."""
-    print(f"JWT INVALID TOKEN: {error}")
+    logger.warning(f"JWT INVALID TOKEN: {error}")
     return jsonify({
         'error': 'Invalid Token',
         'message': 'Invalid authentication token'
@@ -157,7 +165,6 @@ def invalid_token_callback(error):
 @jwt.unauthorized_loader
 def missing_token_callback(error):
     """Handle missing JWT tokens."""
-    print(f"JWT MISSING TOKEN: {error}")
     return jsonify({
         'error': 'Missing Token',
         'message': 'Authentication token is required'
@@ -169,17 +176,17 @@ def missing_token_callback(error):
 # ============================================================
 
 if __name__ == '__main__':
-    # Run the development server
+    port = int(os.environ.get('PORT', 5000))
     print("\n" + "=" * 60)
     print("SmartCurriculum API Server")
     print("=" * 60)
     print(f"Environment: {'Development' if config.DEBUG else 'Production'}")
-    print(f"Database: {config.DATABASE_TYPE}")
-    print(f"Server: http://localhost:5000")
+    print(f"Database: MongoDB Atlas ({config.MONGODB_DB_NAME})")
+    print(f"Server: http://localhost:{port}")
     print("=" * 60 + "\n")
-    
+
     app.run(
         host='0.0.0.0',
-        port=5000,
+        port=port,
         debug=config.DEBUG
     )
