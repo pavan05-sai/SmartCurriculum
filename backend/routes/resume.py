@@ -1,12 +1,15 @@
-# SmartCurriculum - Resume Routes
+# SmartCurriculum - Resume Routes (MongoDB)
 # Handles skill mapping for resume generation
 
+import logging
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from database import db
+from database import get_db
 from models.user import User
 from models.skill import Skill, get_skill_category
 from ai_engine.llm_generator import LLMGenerator
+
+logger = logging.getLogger(__name__)
 
 # Create blueprint for resume routes
 resume_bp = Blueprint('resume', __name__)
@@ -17,27 +20,27 @@ resume_bp = Blueprint('resume', __name__)
 def get_skills():
     """
     Get all skills for the current user, formatted for resume.
-    
+
     Query params:
     - category: Filter by category
     - show_on_resume: Filter by resume visibility (true/false)
     """
     user_id = get_jwt_identity()
-    
-    # Build query
-    query = Skill.query.filter_by(user_id=user_id)
-    
-    # Apply filters
+    db = get_db()
+
     category = request.args.get('category')
-    if category:
-        query = query.filter_by(category=category)
-    
-    show_on_resume = request.args.get('show_on_resume')
-    if show_on_resume is not None:
-        query = query.filter_by(show_on_resume=show_on_resume.lower() == 'true')
-    
-    skills = query.order_by(Skill.proficiency_score.desc()).all()
-    
+    show_on_resume_param = request.args.get('show_on_resume')
+    show_on_resume = None
+    if show_on_resume_param is not None:
+        show_on_resume = show_on_resume_param.lower() == 'true'
+
+    skills = Skill.find_by_user(
+        db,
+        user_id=user_id,
+        category=category,
+        show_on_resume=show_on_resume
+    )
+
     # Group by category
     skills_by_category = {}
     for skill in skills:
@@ -45,7 +48,7 @@ def get_skills():
         if cat not in skills_by_category:
             skills_by_category[cat] = []
         skills_by_category[cat].append(skill.to_dict())
-    
+
     return jsonify({
         'skills': [s.to_dict() for s in skills],
         'skills_by_category': skills_by_category,
@@ -53,49 +56,61 @@ def get_skills():
     }), 200
 
 
-@resume_bp.route('/skills/<int:skill_id>', methods=['PUT'])
+@resume_bp.route('/skills/<skill_id>', methods=['PUT'])
 @jwt_required()
 def update_skill(skill_id):
     """
     Update a skill (e.g., edit resume bullet, toggle visibility).
-    
+
     Expected JSON body:
     {
         "resume_bullet": "Custom bullet point text",
         "show_on_resume": true,
-        "level": "advanced"
+        "level": "advanced",
+        "proficiency_score": 85
     }
     """
     user_id = get_jwt_identity()
-    
-    skill = Skill.query.filter_by(id=skill_id, user_id=user_id).first()
-    
+    db = get_db()
+
+    skill = Skill.find_by_user_and_id(db, user_id=user_id, skill_id=skill_id)
     if not skill:
         return jsonify({
             'error': 'Not Found',
             'message': 'Skill not found'
         }), 404
-    
-    data = request.get_json()
-    
-    # Update fields
+
+    data = request.get_json() or {}
+    updates = {}
+
     if 'resume_bullet' in data:
-        skill.resume_bullet = data['resume_bullet']
+        updates['resume_bullet'] = data['resume_bullet']
     if 'show_on_resume' in data:
-        skill.show_on_resume = data['show_on_resume']
+        updates['show_on_resume'] = bool(data['show_on_resume'])
     if 'level' in data:
-        skill.level = data['level']
+        updates['level'] = data['level']
     if 'proficiency_score' in data:
-        skill.update_proficiency(data['proficiency_score'])
-    
+        score = int(data['proficiency_score'])
+        updates['proficiency_score'] = score
+        if 'level' not in data:
+            if score >= 90:
+                updates['level'] = 'expert'
+            elif score >= 70:
+                updates['level'] = 'advanced'
+            elif score >= 40:
+                updates['level'] = 'intermediate'
+            else:
+                updates['level'] = 'beginner'
+
     try:
-        db.session.commit()
+        if updates:
+            skill.update(updates)
         return jsonify({
             'message': 'Skill updated',
             'skill': skill.to_dict()
         }), 200
     except Exception as e:
-        db.session.rollback()
+        logger.error(f"Error updating skill {skill_id}: {e}")
         return jsonify({
             'error': 'Update Failed',
             'message': str(e)
@@ -107,7 +122,7 @@ def update_skill(skill_id):
 def add_skill():
     """
     Manually add a skill to the user's profile.
-    
+
     Expected JSON body:
     {
         "name": "Python",
@@ -116,84 +131,80 @@ def add_skill():
     }
     """
     user_id = get_jwt_identity()
-    data = request.get_json()
-    
-    if not data.get('name'):
+    db = get_db()
+    data = request.get_json() or {}
+
+    skill_name = data.get('name', '').strip()
+    if not skill_name:
         return jsonify({
             'error': 'Validation Error',
             'message': 'Skill name is required'
         }), 400
-    
+
     # Check if skill already exists
-    existing = Skill.query.filter_by(
-        user_id=user_id,
-        name=data['name']
-    ).first()
-    
+    existing = Skill.find_by_user_and_name(db, user_id=user_id, name=skill_name)
     if existing:
         return jsonify({
             'error': 'Already Exists',
-            'message': 'You already have this skill'
+            'message': 'You already have this skill in your profile'
         }), 409
-    
+
+    level = data.get('level', 'beginner')
+    level_scores = {
+        'beginner': 25,
+        'intermediate': 50,
+        'advanced': 75,
+        'expert': 95
+    }
+    proficiency_score = data.get('proficiency_score', level_scores.get(level, 25))
+
     try:
-        skill = Skill(
+        skill = Skill.create(
+            db,
             user_id=user_id,
-            name=data['name'],
-            category=get_skill_category(data['name']),
-            level=data.get('level', 'beginner'),
+            name=skill_name,
+            category=data.get('category', get_skill_category(skill_name)),
+            level=level,
+            proficiency_score=proficiency_score,
             source=data.get('source', 'self_declared')
         )
-        
-        # Set initial proficiency based on level
-        level_scores = {
-            'beginner': 25,
-            'intermediate': 50,
-            'advanced': 75,
-            'expert': 95
-        }
-        skill.proficiency_score = level_scores.get(skill.level, 25)
-        
-        db.session.add(skill)
-        db.session.commit()
-        
+
         return jsonify({
-            'message': 'Skill added',
+            'message': 'Skill added successfully',
             'skill': skill.to_dict()
         }), 201
-        
+
     except Exception as e:
-        db.session.rollback()
+        logger.error(f"Error adding skill: {e}")
         return jsonify({
             'error': 'Add Failed',
             'message': str(e)
         }), 500
 
 
-@resume_bp.route('/skills/<int:skill_id>', methods=['DELETE'])
+@resume_bp.route('/skills/<skill_id>', methods=['DELETE'])
 @jwt_required()
 def delete_skill(skill_id):
     """
     Delete a skill from the user's profile.
     """
     user_id = get_jwt_identity()
-    
-    skill = Skill.query.filter_by(id=skill_id, user_id=user_id).first()
-    
+    db = get_db()
+
+    skill = Skill.find_by_user_and_id(db, user_id=user_id, skill_id=skill_id)
     if not skill:
         return jsonify({
             'error': 'Not Found',
             'message': 'Skill not found'
         }), 404
-    
+
     try:
-        db.session.delete(skill)
-        db.session.commit()
+        skill.delete()
         return jsonify({
-            'message': 'Skill deleted'
+            'message': 'Skill deleted successfully'
         }), 200
     except Exception as e:
-        db.session.rollback()
+        logger.error(f"Error deleting skill {skill_id}: {e}")
         return jsonify({
             'error': 'Delete Failed',
             'message': str(e)
@@ -205,38 +216,33 @@ def delete_skill(skill_id):
 def generate_resume_bullets():
     """
     Generate AI-powered resume bullet points for skills.
-    
+
     Expected JSON body:
     {
-        "skill_ids": [1, 2, 3],  // Optional, generates for all if not provided
-        "style": "impactful"  // impactful, technical, concise
+        "skill_ids": ["653..."],  // Optional, generates for all if not provided
+        "style": "impactful"      // impactful, technical, concise
     }
     """
     user_id = get_jwt_identity()
+    db = get_db()
     data = request.get_json() or {}
-    
+
     # Get skills
     if data.get('skill_ids'):
-        skills = Skill.query.filter(
-            Skill.id.in_(data['skill_ids']),
-            Skill.user_id == user_id
-        ).all()
+        skills = Skill.find_by_ids_and_user(db, user_id=user_id, skill_ids=data['skill_ids'])
     else:
-        skills = Skill.query.filter_by(
-            user_id=user_id,
-            show_on_resume=True
-        ).all()
-    
+        skills = Skill.find_by_user(db, user_id=user_id, show_on_resume=True)
+
     if not skills:
         return jsonify({
             'error': 'No Skills',
             'message': 'No skills found to generate bullets for'
         }), 404
-    
+
     try:
         llm = LLMGenerator()
         style = data.get('style', 'impactful')
-        
+
         generated_bullets = []
         for skill in skills:
             bullet = llm.generate_resume_bullet(
@@ -244,23 +250,21 @@ def generate_resume_bullets():
                 skill_level=skill.level,
                 style=style
             )
-            
-            skill.resume_bullet = bullet
+
+            skill.update({'resume_bullet': bullet})
             generated_bullets.append({
                 'skill_id': skill.id,
                 'skill_name': skill.name,
                 'bullet': bullet
             })
-        
-        db.session.commit()
-        
+
         return jsonify({
             'message': 'Resume bullets generated',
             'bullets': generated_bullets
         }), 200
-        
+
     except Exception as e:
-        db.session.rollback()
+        logger.error(f"Error generating resume bullets: {e}")
         return jsonify({
             'error': 'Generation Failed',
             'message': str(e)
@@ -275,37 +279,34 @@ def export_skills_for_resume():
     Groups skills by category with bullet points.
     """
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
-    
-    # Get all resume-visible skills
-    skills = Skill.query.filter_by(
-        user_id=user_id,
-        show_on_resume=True
-    ).order_by(Skill.proficiency_score.desc()).all()
-    
+    db = get_db()
+
+    user = User.find_by_id(db, user_id)
+    skills = Skill.find_by_user(db, user_id=user_id, show_on_resume=True)
+
     # Group by category
     resume_sections = {}
     for skill in skills:
         cat = skill.category or 'other'
         cat_title = cat.replace('_', ' ').title()
-        
+
         if cat_title not in resume_sections:
             resume_sections[cat_title] = {
                 'skills': [],
                 'bullets': []
             }
-        
+
         resume_sections[cat_title]['skills'].append(skill.name)
         if skill.resume_bullet:
             resume_sections[cat_title]['bullets'].append(skill.resume_bullet)
-    
+
     # Create summary line
-    skill_names = [s.name for s in skills[:10]]  # Top 10 skills
+    skill_names = [s.name for s in skills[:10]]
     summary_line = ', '.join(skill_names)
-    
+
     return jsonify({
         'user_name': user.name if user else 'User',
-        'summary': f"Proficient in: {summary_line}",
+        'summary': f"Proficient in: {summary_line}" if summary_line else "No skills listed yet",
         'sections': resume_sections,
         'total_skills': len(skills)
     }), 200
@@ -316,46 +317,45 @@ def export_skills_for_resume():
 def match_skills_to_job():
     """
     Match user's skills to a job description.
-    
+
     Expected JSON body:
     {
         "job_description": "Job posting text..."
     }
     """
     user_id = get_jwt_identity()
-    data = request.get_json()
-    
-    if not data.get('job_description'):
+    db = get_db()
+    data = request.get_json() or {}
+
+    job_description = data.get('job_description', '').strip()
+    if not job_description:
         return jsonify({
             'error': 'Validation Error',
             'message': 'job_description is required'
         }), 400
-    
-    # Get user's skills
-    skills = Skill.query.filter_by(user_id=user_id).all()
+
+    skills = Skill.find_by_user(db, user_id=user_id)
     user_skills = {s.name.lower(): s for s in skills}
-    
+
     try:
         from ai_engine.nlp_analyzer import NLPAnalyzer
         nlp = NLPAnalyzer()
-        
-        # Analyze job description
-        job_analysis = nlp.analyze_job_description(data['job_description'])
+
+        job_analysis = nlp.analyze_job_description(job_description)
         required_skills = job_analysis.get('required_skills', [])
-        
-        # Match skills
+
         matched = []
         missing = []
-        
+
         for req_skill in required_skills:
             skill_lower = req_skill.lower()
             if skill_lower in user_skills or any(skill_lower in us for us in user_skills.keys()):
                 matched.append(req_skill)
             else:
                 missing.append(req_skill)
-        
+
         match_percentage = (len(matched) / len(required_skills) * 100) if required_skills else 0
-        
+
         return jsonify({
             'match_percentage': round(match_percentage, 1),
             'matched_skills': matched,
@@ -363,8 +363,9 @@ def match_skills_to_job():
             'total_required': len(required_skills),
             'recommendation': 'Great match!' if match_percentage >= 70 else 'Consider learning the missing skills'
         }), 200
-        
+
     except Exception as e:
+        logger.error(f"Error matching skills to job: {e}")
         return jsonify({
             'error': 'Analysis Failed',
             'message': str(e)
