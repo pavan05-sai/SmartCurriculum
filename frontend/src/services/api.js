@@ -3,9 +3,11 @@
 
 import axios from 'axios';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+
 // Create axios instance
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: API_BASE_URL,
     headers: {
         'Content-Type': 'application/json'
     },
@@ -46,7 +48,7 @@ api.interceptors.response.use(
                 if (refreshToken) {
                     // Use standard axios for refresh to avoid infinite interceptor loop
                     // Send refresh token in Authorization header as expected by Flask-JWT-Extended
-                    const response = await axios.post('/api/auth/refresh', {}, {
+                    const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
                         headers: {
                             Authorization: `Bearer ${refreshToken}`
                         }
