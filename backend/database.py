@@ -1,112 +1,117 @@
 # SmartCurriculum Database Module
-# Provides database abstraction layer using SQLAlchemy
+# MongoDB connection management using PyMongo
 
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import logging
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure, ConfigurationError, ServerSelectionTimeoutError
 from config import get_config
 
-# Initialize SQLAlchemy instance
-# This will be bound to the Flask app in app.py
-db = SQLAlchemy()
+logger = logging.getLogger(__name__)
+
+# Global MongoDB client and database references
+_client = None
+_db = None
+
+
+def get_db():
+    """
+    Get the MongoDB database instance.
+    Returns the database object for direct collection access.
+    """
+    global _db
+    if _db is None:
+        raise RuntimeError("Database not initialized. Call init_db(app) first.")
+    return _db
+
+
+def get_client():
+    """Get the underlying MongoClient instance."""
+    global _client
+    return _client
 
 
 def init_db(app):
     """
-    Initialize the database with the Flask application.
-    
+    Initialize the MongoDB connection with the Flask application.
+
     This function:
-    1. Gets the database URI from configuration
-    2. Configures SQLAlchemy with the Flask app
-    3. Creates all tables if they don't exist
-    
+    1. Reads MONGODB_URI from configuration
+    2. Creates a MongoClient connection
+    3. Validates the connection with a ping
+    4. Stores the db reference globally
+
     Args:
         app: Flask application instance
     """
-    config = get_config()
-    
-    # Set the database URI in Flask config
-    app.config['SQLALCHEMY_DATABASE_URI'] = config.get_database_uri()
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_ECHO'] = config.DEBUG  # Log SQL in debug mode
-    
-    # Initialize SQLAlchemy with the app
-    db.init_app(app)
-    
-    # Create all tables within app context
-    with app.app_context():
-        db.create_all()
-        print(f"Database initialized: {config.DATABASE_TYPE}")
+    global _client, _db
+
+    cfg = get_config()
+    mongo_uri = cfg.MONGODB_URI
+    db_name = cfg.MONGODB_DB_NAME
+
+    try:
+        # Create client with a sensible timeout for cloud connections
+        _client = MongoClient(
+            mongo_uri,
+            serverSelectionTimeoutMS=10000,
+            connectTimeoutMS=10000,
+            socketTimeoutMS=30000
+        )
+
+        # Validate connection with ping
+        _client.admin.command('ping')
+
+        # Select the database
+        _db = _client[db_name]
+
+        # Create indexes for performance
+        _ensure_indexes(_db)
+
+        logger.info(f"MongoDB connected: {db_name}")
+        print(f"[DB] MongoDB connected: {db_name}")
+
+    except ServerSelectionTimeoutError:
+        logger.error("MongoDB connection timed out. Check MONGODB_URI and network access.")
+        raise
+    except ConnectionFailure as e:
+        logger.error(f"MongoDB connection failed: {e}")
+        raise
+    except ConfigurationError as e:
+        logger.error(f"MongoDB configuration error: {e}")
+        raise
 
 
-def get_db_session():
-    """
-    Get a new database session for direct database operations.
-    Useful for operations outside Flask request context.
-    
-    Returns:
-        SQLAlchemy session object
-    """
-    config = get_config()
-    engine = create_engine(config.get_database_uri())
-    Session = sessionmaker(bind=engine)
-    return Session()
+def close_db():
+    """Close the MongoDB connection."""
+    global _client, _db
+    if _client:
+        _client.close()
+        _client = None
+        _db = None
+        logger.info("MongoDB connection closed.")
 
 
-def reset_db(app):
+def _ensure_indexes(db):
     """
-    Reset the database by dropping and recreating all tables.
-    WARNING: This will delete all data!
-    
-    Args:
-        app: Flask application instance
+    Create necessary indexes for query performance.
+    Called once at startup.
     """
-    with app.app_context():
-        db.drop_all()
-        db.create_all()
-        print("Database reset complete")
+    try:
+        # Users collection indexes
+        db.users.create_index("email", unique=True)
 
+        # Curricula collection indexes
+        db.curricula.create_index("user_id")
+        db.curricula.create_index([("user_id", 1), ("status", 1)])
+        db.curricula.create_index([("user_id", 1), ("created_at", -1)])
 
-class DatabaseManager:
-    """
-    Database manager class for common database operations.
-    Provides a consistent interface for CRUD operations.
-    """
-    
-    @staticmethod
-    def add(model_instance):
-        """Add a new record to the database."""
-        db.session.add(model_instance)
-        db.session.commit()
-        return model_instance
-    
-    @staticmethod
-    def update():
-        """Commit pending changes to the database."""
-        db.session.commit()
-    
-    @staticmethod
-    def delete(model_instance):
-        """Delete a record from the database."""
-        db.session.delete(model_instance)
-        db.session.commit()
-    
-    @staticmethod
-    def get_by_id(model_class, record_id):
-        """Get a record by its ID."""
-        return model_class.query.get(record_id)
-    
-    @staticmethod
-    def get_all(model_class):
-        """Get all records of a model."""
-        return model_class.query.all()
-    
-    @staticmethod
-    def filter_by(model_class, **kwargs):
-        """Filter records by given criteria."""
-        return model_class.query.filter_by(**kwargs).all()
-    
-    @staticmethod
-    def first_or_none(model_class, **kwargs):
-        """Get first matching record or None."""
-        return model_class.query.filter_by(**kwargs).first()
+        # Topics collection indexes
+        db.topics.create_index("curriculum_id")
+        db.topics.create_index([("curriculum_id", 1), ("week", 1), ("order_index", 1)])
+
+        # Skills collection indexes
+        db.skills.create_index("user_id")
+
+        logger.info("MongoDB indexes ensured.")
+    except Exception as e:
+        logger.warning(f"Could not create indexes (non-fatal): {e}")

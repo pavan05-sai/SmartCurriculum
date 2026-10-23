@@ -1,114 +1,208 @@
-# SmartCurriculum - Skill Model
+# SmartCurriculum - Skill Model (MongoDB)
 # Tracks skills acquired by users for resume mapping
 
 from datetime import datetime
-from database import db
+from bson import ObjectId
+import logging
+
+logger = logging.getLogger(__name__)
 
 
-class Skill(db.Model):
+class Skill:
     """
-    Skill model for tracking user-acquired skills.
-    
-    Skills are gained by completing topics and are used for:
+    Skill model for MongoDB.
+
+    Skills are gained by completing topics or self-declared, used for:
     1. Resume skill mapping - generating resume bullet points
     2. Skill gap analysis - comparing with job requirements
     3. Proficiency tracking - monitoring skill development
     """
-    
-    __tablename__ = 'skills'
-    
-    # Primary key
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Foreign key to user
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
-    
-    # Skill details
-    name = db.Column(db.String(255), nullable=False)
-    category = db.Column(db.String(100))  # e.g., 'programming', 'data_science', 'web_dev'
-    
-    # Proficiency level: 'beginner', 'intermediate', 'advanced', 'expert'
-    level = db.Column(db.String(50), default='beginner')
-    
-    # Proficiency score (0-100) for more granular tracking
-    proficiency_score = db.Column(db.Integer, default=0)
-    
-    # Source of the skill (how it was acquired)
-    # e.g., 'curriculum', 'project', 'certification', 'self_declared'
-    source = db.Column(db.String(100), default='curriculum')
-    
-    # The topic ID that granted this skill (if from curriculum)
-    source_topic_id = db.Column(db.Integer)
-    
-    # Resume bullet point - auto-generated or user-edited
-    resume_bullet = db.Column(db.Text)
-    
-    # Whether this skill is verified (e.g., through assessment)
-    is_verified = db.Column(db.Boolean, default=False)
-    
-    # Whether to show this skill on resume
-    show_on_resume = db.Column(db.Boolean, default=True)
-    
-    # Timestamps
-    acquired_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    def __init__(self, user_id, name, **kwargs):
-        """
-        Create a new skill record.
-        
-        Args:
-            user_id: ID of the user
-            name: Name of the skill
-            **kwargs: Additional fields
-        """
-        self.user_id = user_id
-        self.name = name
-        
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                setattr(self, key, value)
-    
-    def update_proficiency(self, score):
-        """
-        Update proficiency score and adjust level accordingly.
-        
-        Args:
-            score: New proficiency score (0-100)
-        """
-        self.proficiency_score = max(0, min(100, score))
-        
-        # Auto-update level based on score
-        if self.proficiency_score >= 90:
-            self.level = 'expert'
-        elif self.proficiency_score >= 70:
-            self.level = 'advanced'
-        elif self.proficiency_score >= 40:
-            self.level = 'intermediate'
+
+    COLLECTION = 'skills'
+
+    def __init__(self, db, data: dict):
+        self._db = db
+        self._data = data
+
+    # ─── Properties ───────────────────────────────────────────────────────────
+
+    @property
+    def id(self):
+        return str(self._data.get('_id', ''))
+
+    @property
+    def user_id(self):
+        return str(self._data.get('user_id', ''))
+
+    @property
+    def name(self):
+        return self._data.get('name', '')
+
+    @property
+    def category(self):
+        return self._data.get('category', 'other')
+
+    @property
+    def level(self):
+        return self._data.get('level', 'beginner')
+
+    @property
+    def proficiency_score(self):
+        return self._data.get('proficiency_score', 0)
+
+    @property
+    def source(self):
+        return self._data.get('source', 'curriculum')
+
+    @property
+    def source_topic_id(self):
+        return self._data.get('source_topic_id')
+
+    @property
+    def resume_bullet(self):
+        return self._data.get('resume_bullet', '')
+
+    @property
+    def is_verified(self):
+        return self._data.get('is_verified', False)
+
+    @property
+    def show_on_resume(self):
+        return self._data.get('show_on_resume', True)
+
+    @property
+    def acquired_at(self):
+        return self._data.get('acquired_at')
+
+    # ─── CRUD Class Methods ───────────────────────────────────────────────────
+
+    @classmethod
+    def create(cls, db, user_id: str, name: str, **kwargs) -> 'Skill':
+        """Insert a new skill document."""
+        doc = {
+            'user_id': str(user_id),
+            'name': name.strip(),
+            'category': kwargs.get('category', get_skill_category(name)),
+            'level': kwargs.get('level', 'beginner'),
+            'proficiency_score': kwargs.get('proficiency_score', 25),
+            'source': kwargs.get('source', 'curriculum'),
+            'source_topic_id': kwargs.get('source_topic_id'),
+            'resume_bullet': kwargs.get('resume_bullet', ''),
+            'is_verified': kwargs.get('is_verified', False),
+            'show_on_resume': kwargs.get('show_on_resume', True),
+            'acquired_at': datetime.utcnow(),
+            'updated_at': datetime.utcnow(),
+        }
+        result = db[cls.COLLECTION].insert_one(doc)
+        doc['_id'] = result.inserted_id
+        return cls(db, doc)
+
+    @classmethod
+    def find_by_user(cls, db, user_id: str, category: str = None, show_on_resume: bool = None) -> list:
+        """Find skills for a user with optional category and visibility filters."""
+        query = {'user_id': str(user_id)}
+        if category:
+            query['category'] = category
+        if show_on_resume is not None:
+            query['show_on_resume'] = show_on_resume
+
+        docs = db[cls.COLLECTION].find(query).sort('proficiency_score', -1)
+        return [cls(db, doc) for doc in docs]
+
+    @classmethod
+    def find_by_id(cls, db, skill_id: str) -> 'Skill | None':
+        try:
+            doc = db[cls.COLLECTION].find_one({'_id': ObjectId(str(skill_id))})
+            return cls(db, doc) if doc else None
+        except Exception:
+            return None
+
+    @classmethod
+    def find_by_user_and_id(cls, db, user_id: str, skill_id: str) -> 'Skill | None':
+        """Find a specific skill belonging to a user."""
+        try:
+            doc = db[cls.COLLECTION].find_one({
+                '_id': ObjectId(str(skill_id)),
+                'user_id': str(user_id)
+            })
+            return cls(db, doc) if doc else None
+        except Exception:
+            return None
+
+    @classmethod
+    def find_by_user_and_name(cls, db, user_id: str, name: str) -> 'Skill | None':
+        """Find a skill by name (case-insensitive) for a user."""
+        import re
+        doc = db[cls.COLLECTION].find_one({
+            'user_id': str(user_id),
+            'name': {'$regex': f'^{re.escape(name.strip())}$', '$options': 'i'}
+        })
+        return cls(db, doc) if doc else None
+
+    @classmethod
+    def find_by_ids_and_user(cls, db, user_id: str, skill_ids: list) -> list:
+        """Find multiple skills by list of ID strings for a user."""
+        obj_ids = []
+        for sid in skill_ids:
+            try:
+                obj_ids.append(ObjectId(str(sid)))
+            except Exception:
+                pass
+        docs = db[cls.COLLECTION].find({
+            '_id': {'$in': obj_ids},
+            'user_id': str(user_id)
+        })
+        return [cls(db, doc) for doc in docs]
+
+    def update(self, fields: dict) -> bool:
+        """Update skill fields."""
+        fields['updated_at'] = datetime.utcnow()
+        result = self._db[self.COLLECTION].update_one(
+            {'_id': self._data['_id']},
+            {'$set': fields}
+        )
+        if result.modified_count > 0:
+            self._data.update(fields)
+        return result.acknowledged
+
+    def update_proficiency(self, score: int) -> bool:
+        """Update proficiency score and adjust level."""
+        score = max(0, min(100, score))
+        if score >= 90:
+            level = 'expert'
+        elif score >= 70:
+            level = 'advanced'
+        elif score >= 40:
+            level = 'intermediate'
         else:
-            self.level = 'beginner'
-    
-    def generate_resume_bullet(self):
-        """
-        Generate a default resume bullet point for this skill.
-        Can be overridden by user or LLM-generated content.
-        """
+            level = 'beginner'
+
+        return self.update({
+            'proficiency_score': score,
+            'level': level
+        })
+
+    def delete(self) -> bool:
+        """Delete this skill document."""
+        result = self._db[self.COLLECTION].delete_one({'_id': self._data['_id']})
+        return result.deleted_count > 0
+
+    # ─── Business Logic ───────────────────────────────────────────────────────
+
+    def generate_resume_bullet(self) -> str:
+        """Generate a default resume bullet point for this skill."""
         level_descriptions = {
             'beginner': 'Familiar with',
             'intermediate': 'Proficient in',
             'advanced': 'Experienced with',
             'expert': 'Expert-level proficiency in'
         }
-        
         description = level_descriptions.get(self.level, 'Knowledge of')
-        self.resume_bullet = f"{description} {self.name}"
-        return self.resume_bullet
-    
-    def verify(self):
-        """Mark this skill as verified."""
-        self.is_verified = True
-    
-    def to_dict(self):
+        return f"{description} {self.name} for technical problem-solving and implementation"
+
+    # ─── Serialization ────────────────────────────────────────────────────────
+
+    def to_dict(self) -> dict:
         """Convert skill to dictionary for API responses."""
         return {
             'id': self.id,
@@ -123,14 +217,14 @@ class Skill(db.Model):
             'is_verified': self.is_verified,
             'show_on_resume': self.show_on_resume,
             'acquired_at': self.acquired_at.isoformat() if self.acquired_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
-    
+
     def __repr__(self):
         return f'<Skill {self.name} ({self.level})>'
 
 
-# Predefined skill categories for organization
+# ─── Predefined Skill Categories ──────────────────────────────────────────────
+
 SKILL_CATEGORIES = {
     'programming': [
         'Python', 'JavaScript', 'Java', 'C++', 'C', 'Go', 'Rust', 'TypeScript',
@@ -160,13 +254,13 @@ SKILL_CATEGORIES = {
 }
 
 
-def get_skill_category(skill_name):
+def get_skill_category(skill_name: str) -> str:
     """
     Get the category for a given skill name.
-    
+
     Args:
         skill_name: Name of the skill
-        
+
     Returns:
         Category name or 'other' if not found
     """

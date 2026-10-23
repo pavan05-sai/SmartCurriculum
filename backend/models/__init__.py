@@ -1,9 +1,8 @@
-# SmartCurriculum - Database Models Package
-# This module exports all database models for easy importing
+# SmartCurriculum Models Package
+# MongoDB-based models for all application entities
 
 from models.user import User
 from models.curriculum import Curriculum, Topic
-from models.skill import Skill
+from models.skill import Skill, get_skill_category
 
-# Export all models
-__all__ = ['User', 'Curriculum', 'Topic', 'Skill']
+__all__ = ['User', 'Curriculum', 'Topic', 'Skill', 'get_skill_category']
