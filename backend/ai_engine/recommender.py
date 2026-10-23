@@ -418,9 +418,14 @@ class CurriculumRecommender:
                             hours_allocated += topic['estimated_hours']
         
         # If user has weak subjects, add related topics
-        weak_subjects = user.get_weak_subjects() if hasattr(user, 'get_weak_subjects') else []
+        if hasattr(user, 'weak_subjects') and isinstance(user.weak_subjects, list):
+            weak_subjects = user.weak_subjects
+        elif hasattr(user, 'get_weak_subjects'):
+            weak_subjects = user.get_weak_subjects()
+        else:
+            weak_subjects = []
         for weak in weak_subjects:
-            weak_lower = weak.lower()
+            weak_lower = str(weak).lower()
             for area, topics in self.topic_database.items():
                 if weak_lower in area.lower():
                     for topic in topics[:2]:  # Add first 2 topics from weak areas
@@ -604,27 +609,35 @@ class CurriculumRecommender:
                 'suggested_topics': []
             }
         
-        # Calculate average performance
-        completed = [p for p in progress_records if p.status == 'completed' and p.score]
+        def _get_val(record, attr, default=None):
+            if isinstance(record, dict):
+                return record.get(attr, default)
+            return getattr(record, attr, default)
+
+        # Calculate completed topics
+        completed = [p for p in progress_records if _get_val(p, 'status') == 'completed']
         if not completed:
             return {
                 'adjustment': 'none',
-                'message': 'Complete some assessments to get personalized recommendations',
+                'message': 'Complete some topics or assessments to get personalized recommendations',
                 'suggested_topics': []
             }
-        
-        avg_score = sum(p.score for p in completed) / len(completed)
-        
+
+        scores = [_get_val(p, 'score') for p in completed if _get_val(p, 'score') is not None]
+        avg_score = (sum(scores) / len(scores)) if scores else 75.0
+
         # Get difficulty feedback
         feedback_counts = {'too_easy': 0, 'just_right': 0, 'too_hard': 0}
         for p in progress_records:
-            if p.difficulty_feedback:
-                feedback_counts[p.difficulty_feedback] = feedback_counts.get(p.difficulty_feedback, 0) + 1
-        
+            fb = _get_val(p, 'difficulty_feedback')
+            if fb in feedback_counts:
+                feedback_counts[fb] += 1
+
         # Determine adjustment
         adjustment = 'none'
         message = ''
-        suggested_difficulty = user.skill_level
+        user_skill = getattr(user, 'skill_level', 'beginner') or 'beginner'
+        suggested_difficulty = user_skill
         
         if avg_score >= 85 and feedback_counts.get('too_easy', 0) > feedback_counts.get('too_hard', 0):
             adjustment = 'increase'
