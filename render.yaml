@@ -1,0 +1,31 @@
+# Render Infrastructure as Code (Blueprint)
+# Deploy SmartCurriculum on Render: https://render.com
+
+services:
+  - type: web
+    name: smartcurriculum-api
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB_NAME
+        value: smartcurriculum
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CLAUDE_MODEL
+        value: claude-3-5-sonnet-20240620
+      - key: CORS_ORIGINS
+        sync: false
